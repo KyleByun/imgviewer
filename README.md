@@ -36,7 +36,7 @@ ACDSee 스타일의 가볍고 빠른 이미지 뷰어입니다. Rust와 [egui](h
 
 ## 빌드 / 실행
 
-[Rust](https://rustup.rs)가 필요합니다 (Windows 설치 방법은 [아래](#rust-설치-windows-11) 참고).
+[Rust](https://rustup.rs)가 필요합니다 (OS별 설치 방법은 [아래](#rust-설치) 참고).
 
 ```sh
 git clone https://github.com/KyleByun/imgviewer.git
@@ -50,7 +50,7 @@ cargo test                          # 테스트
 
 - **macOS**: `sh packaging/macos/build_app.sh` → `target/release/ImgView.app`을 응용 프로그램 폴더로 옮기면 Finder/Dock에 아이콘이 보입니다.
 - **Linux**: `sh packaging/linux/install.sh` → 실행 파일, 아이콘, 앱 메뉴 항목을 사용자 폴더에 설치합니다.
-  빌드에 필요한 패키지(Ubuntu): `sudo apt install libgtk-3-dev libxkbcommon-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev`
+  빌드에 필요한 패키지는 [Ubuntu 설치](#ubuntu)를 참고하세요.
 
 ## 아이콘
 
@@ -84,7 +84,16 @@ Windows에서 바탕 화면 바로 가기가 예전 아이콘으로 보이면 �
 창 위치는 저장된 물리 픽셀 위치 그대로 복원하므로 배율이 다른 모니터가 섞여 있어도 밀리지 않고, 최대화한 창은 그 모니터에서 다시 최대화됩니다.
 저장된 위치가 지금 화면 영역 밖이면(듀얼 모니터에서 모니터 하나를 뺀 경우 등) 가장 가까운 모니터의 가운데로 띄웁니다. (Windows. macOS는 OS가 알아서 화면 안으로 옮깁니다.)
 
-## Rust 설치 (Windows 11)
+## Rust 설치
+
+어느 OS든 공식 설치 관리자인 **rustup**으로 설치합니다. 설치가 끝나면 **새 터미널 창**에서 확인하세요.
+
+```sh
+rustc --version
+cargo --version
+```
+
+### Windows 11
 
 PowerShell에서:
 
@@ -97,7 +106,44 @@ winget install Rustlang.Rustup
 ```
 
 winget 대신 https://rustup.rs 에서 `rustup-init.exe`를 받아 실행해도 됩니다.
-설치 후 **새 터미널 창**에서 `rustc --version`, `cargo --version`으로 확인하세요.
 
 **빌드가 `os error 4551`로 막히면**: Windows 11의 Smart App Control이 빌드 중 생성되는 서명 없는 프로그램(build script)을 막은 것입니다.
 Windows 보안 → 앱 및 브라우저 컨트롤 → Smart App Control 설정 → **끄기**
+
+### Ubuntu
+
+터미널에서:
+
+```sh
+# 1) 컴파일러/링커와, 창·폴더 선택 창(GTK)을 만드는 데 필요한 개발 패키지
+sudo apt update
+sudo apt install -y build-essential curl pkg-config \
+    libgtk-3-dev libxkbcommon-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
+
+# 2) rustup (질문이 나오면 Enter = 기본 설치)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# 3) 지금 터미널에 바로 적용 (새 터미널은 자동으로 적용됨)
+. "$HOME/.cargo/env"
+```
+
+`apt install rustc cargo`로 설치하는 배포판 패키지는 버전이 오래되어 빌드가 안 될 수 있으니 rustup을 쓰세요.
+다른 배포판(Fedora 등)에서는 같은 이름의 GTK3/xkbcommon/xcb 개발 패키지를 설치하면 됩니다. (Fedora: `sudo dnf install gcc gtk3-devel libxkbcommon-devel libxcb-devel`)
+
+### macOS
+
+터미널에서:
+
+```sh
+# 1) Xcode Command Line Tools (컴파일러/링커, 창이 뜨면 "설치")
+xcode-select --install
+
+# 2) rustup (질문이 나오면 Enter = 기본 설치)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# 3) 지금 터미널에 바로 적용 (새 터미널은 자동으로 적용됨)
+. "$HOME/.cargo/env"
+```
+
+Apple Silicon(M1 이후)과 Intel Mac 모두 같은 방법으로 설치합니다. Homebrew를 쓴다면 `brew install rustup` 후 `rustup-init`을 실행해도 됩니다.
+Finder/Dock에 아이콘이 보이는 앱으로 만들려면 빌드 후 `sh packaging/macos/build_app.sh`를 실행하세요.
