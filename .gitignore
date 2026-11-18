@@ -1,0 +1,25 @@
+# 이 저장소에는 빌드에 필요한 파일만 올린다.
+# 최상위의 모든 항목을 제외한 뒤, 필요한 것만 아래에서 다시 포함시킨다.
+# (target/, 로그, 테스트용 이미지, 에디터/AI 도구 설정 등은 자동으로 제외됨)
+/*
+!/.gitignore
+!/.gitattributes
+!/Cargo.toml
+!/Cargo.lock
+!/README.md
+!/build.rs
+!/src/
+!/assets/
+!/examples/
+!/packaging/
+
+# 포함된 폴더 안에서도 제외할 파일
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+*.rs.bk
+Thumbs.db
+desktop.ini
+.DS_Store

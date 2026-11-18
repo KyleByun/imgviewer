@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=ImgView
+Comment=Simple image viewer
+Exec=imgview %f
+Icon=imgview
+Terminal=false
+Categories=Graphics;Viewer;
+MimeType=image/png;image/jpeg;image/gif;image/bmp;image/webp;image/tiff;image/x-icon;image/x-tga;image/x-portable-anymap;
+StartupWMClass=ImgView

@@ -1,0 +1,3 @@
+# macOS/Linux에서 실행하는 스크립트와 .desktop 파일은 항상 LF 줄바꿈
+*.sh      text eol=lf
+*.desktop text eol=lf

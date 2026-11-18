@@ -1,0 +1,103 @@
+# ImgView
+
+ACDSee 스타일의 가볍고 빠른 이미지 뷰어입니다. Rust와 [egui](https://github.com/emilk/egui)로 만들었고 Windows, macOS, Linux에서 동작합니다.
+
+왼쪽 폴더 트리에서 폴더를 고르면 오른쪽에 썸네일이 격자로 나오고, 썸네일을 더블클릭하면 크게 볼 수 있습니다.
+
+![ImgView 스크린샷](assets/screenshot.png)
+
+## 주요 기능
+
+- **폴더 트리 + 썸네일 목록**: 폴더를 고르면 이미지가 썸네일로 표시되고, `<<` 버튼으로 트리를 숨길 수 있습니다.
+- **크게 보기**: 마우스 휠로 확대/축소, 끌어서 이동, ←/→로 이전/다음 이미지. GIF 애니메이션도 재생됩니다.
+- **파일 관리**: 탐색기와 끌어놓기로 복사, Del로 휴지통 이동, Shift+Del로 영구 삭제, Ctrl/Shift+클릭으로 여러 개 선택
+- **정렬**: 빈 곳을 오른쪽 클릭 → Sort by (Name / Date modified / Type / Size / Date created)
+- **설정 기억**: 마지막 폴더, 정렬, 썸네일 크기, 창 위치를 다음 실행 때 그대로 복원합니다.
+- **지원 형식**: PNG, JPG, GIF, BMP, ICO, TIFF, WebP, TGA, PNM(PBM/PGM/PPM), QOI, HDR
+  — 사진의 EXIF 회전 정보를 반영하고, 확장자가 틀려도 파일 내용으로 형식을 판별합니다.
+- **빠른 표시**: 썸네일은 화면에 보이는 것만 백그라운드에서 읽고, 크게 보기에서는 앞뒤 이미지를 미리 읽어 둡니다.
+
+## 사용법
+
+| 화면 | 동작 |
+|---|---|
+| 폴더 트리 | 폴더 클릭 → 오른쪽에 내용 표시 · `<<` / `>>` 버튼으로 숨기기/보이기 |
+| 목록 | 클릭 → 선택 · 썸네일 더블클릭 → 크게 보기 · 폴더 타일 더블클릭 → 폴더 이동 |
+| 목록 | Ctrl+클릭: 여러 개 선택 · Shift+클릭: 범위 선택 · Ctrl+A: 전체 선택 · Esc / 빈 곳 클릭: 선택 해제 |
+| 목록 | **Del**: 선택한 항목을 휴지통으로 이동 · **Shift+Del**: 확인 후 영구 삭제 (휴지통을 거치지 않음) |
+| 목록 | 빈 곳 오른쪽 클릭 → **Sort by** (Name / Date modified / Type / Size / Date created, Ascending / Descending), **Refresh** |
+| 목록 | 방향키 이동, Enter 열기, Backspace 상위 폴더, Ctrl+O 폴더 열기, F5 새로 고침 |
+| 목록 | 탐색기 → 창에 끌어다 놓기: 현재 폴더로 **복사** (같은 이름이 있으면 `이름 (2).jpg`로 저장) |
+| 목록 | 썸네일 → 탐색기로 끌기: **복사** (선택한 파일 전부, Windows/macOS) |
+| 크게 보기 | 휠: 확대/축소 (커서 위치 기준) · 왼쪽 버튼 끌기: 보이는 영역 이동 |
+| 크게 보기 | ←/→, PageUp/PageDown: 이전/다음 · 0: 화면 맞춤 · 1: 100% · +/-: 확대/축소 · F11: 전체 화면 |
+| 크게 보기 | Del / Shift+Del: 보고 있는 이미지 삭제 후 다음 이미지로 |
+| 크게 보기 | Esc / Backspace / 더블클릭: 목록으로 |
+
+## 빌드 / 실행
+
+[Rust](https://rustup.rs)가 필요합니다 (Windows 설치 방법은 [아래](#rust-설치-windows-11) 참고).
+
+```sh
+git clone https://github.com/KyleByun/imgviewer.git
+cd imgviewer
+cargo run --release                 # 실행
+cargo run --release -- "D:\사진"     # 폴더나 이미지를 지정해서 실행
+cargo test                          # 테스트
+```
+
+실행 파일은 `target/release/imgview(.exe)`에 만들어집니다. 폴더나 이미지를 실행 파일에 끌어다 놓아도 열립니다.
+
+- **macOS**: `sh packaging/macos/build_app.sh` → `target/release/ImgView.app`을 응용 프로그램 폴더로 옮기면 Finder/Dock에 아이콘이 보입니다.
+- **Linux**: `sh packaging/linux/install.sh` → 실행 파일, 아이콘, 앱 메뉴 항목을 사용자 폴더에 설치합니다.
+  빌드에 필요한 패키지(Ubuntu): `sudo apt install libgtk-3-dev libxkbcommon-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev`
+
+## 아이콘
+
+원본 그림은 `src/icon.png`이고, 둥근 사각형 바깥을 투명하게 만든 OS별 아이콘 파일이 `assets/icons/`에 있습니다.
+
+| 파일 | OS | 적용되는 곳 | 방법 |
+|---|---|---|---|
+| `imgview.ico` (16~256px) | Windows | exe 파일, 바탕 화면·바로 가기, 탐색기, 작업 표시줄 | 빌드할 때 자동으로 exe에 들어감 (`build.rs`) |
+| `imgview.icns` (16~1024px) | macOS | Finder, Dock, Launchpad | `packaging/macos/build_app.sh` |
+| `imgview_256.png`, `imgview_512.png` | Linux | 앱 메뉴, 바탕 화면 | `packaging/linux/install.sh` |
+| `imgview_256.png` | 공통 | 실행 중인 창의 제목 표시줄, 작업 표시줄/Dock | 빌드할 때 자동으로 실행 파일에 들어감 |
+
+그림을 바꾸려면 `src/icon.png`를 교체하고 아이콘 파일을 다시 만든 뒤 빌드하세요.
+
+```sh
+cargo run --release --example make_icons   # src/icon.png → assets/icons/*
+cargo build --release
+```
+
+Windows에서 바탕 화면 바로 가기가 예전 아이콘으로 보이면 아이콘 캐시를 새로 고치세요: `ie4uinit.exe -show`
+
+## 설정 저장
+
+마지막 폴더, Sort by 설정, 썸네일 크기, 폴더 트리 표시 여부, 창 크기·위치, 트리 너비와 펼침 상태를 기억합니다.
+프로그램을 끌 때(그리고 실행 중 30초마다) 아래 파일에 저장됩니다. 파일을 지우면 처음 상태로 돌아갑니다.
+
+- Windows: `%APPDATA%\ImgView\data\app.ron`
+- macOS: `~/Library/Application Support/ImgView/app.ron`
+- Linux: `~/.local/share/imgview/app.ron`
+
+창 위치는 저장된 물리 픽셀 위치 그대로 복원하므로 배율이 다른 모니터가 섞여 있어도 밀리지 않고, 최대화한 창은 그 모니터에서 다시 최대화됩니다.
+저장된 위치가 지금 화면 영역 밖이면(듀얼 모니터에서 모니터 하나를 뺀 경우 등) 가장 가까운 모니터의 가운데로 띄웁니다. (Windows. macOS는 OS가 알아서 화면 안으로 옮깁니다.)
+
+## Rust 설치 (Windows 11)
+
+PowerShell에서:
+
+```powershell
+# 1) C++ 빌드 도구 (Rust의 MSVC 링커와 아이콘 리소스 컴파일러가 필요로 함, 관리자 권한 필요)
+winget install Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+
+# 2) rustup (Rust 설치 관리자)
+winget install Rustlang.Rustup
+```
+
+winget 대신 https://rustup.rs 에서 `rustup-init.exe`를 받아 실행해도 됩니다.
+설치 후 **새 터미널 창**에서 `rustc --version`, `cargo --version`으로 확인하세요.
+
+**빌드가 `os error 4551`로 막히면**: Windows 11의 Smart App Control이 빌드 중 생성되는 서명 없는 프로그램(build script)을 막은 것입니다.
+Windows 보안 → 앱 및 브라우저 컨트롤 → Smart App Control 설정 → **끄기**
