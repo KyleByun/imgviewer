@@ -210,7 +210,9 @@ fn list_subfolders(path: &Path) -> Vec<(PathBuf, String)> {
         .filter_map(|entry| {
             let name = entry.file_name().to_string_lossy().into_owned();
             let meta = entry.metadata().ok()?;
-            (meta.is_dir() && !is_hidden(&meta, &name)).then(|| (entry.path(), name))
+            // 분해형(NFD) 이름이 자모로 쪼개져 보이지 않도록 합쳐서 보여준다.
+            (meta.is_dir() && !is_hidden(&meta, &name))
+                .then(|| (entry.path(), crate::app::nfc(&name)))
         })
         .collect();
     folders.sort_by(|a, b| natural_cmp(&a.1, &b.1));

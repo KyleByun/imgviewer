@@ -23,6 +23,8 @@ image = { version = "0.25", default-features = false, features = [
 dirs = "7.0.0"
 trash = "5.4.0"
 serde = { version = "1.0.229", features = ["derive"] }
+# macOS/Windows에서 만든 파일 이름(NFD)을 화면에 보여줄 때 자모가 분리되지 않도록 NFC로 합친다
+unicode-normalization = "0.1"
 
 # 앱에서 탐색기로 끌어서 복사 (Linux는 GTK 창이 필요해서 지원하지 않음)
 [target.'cfg(any(windows, target_os = "macos"))'.dependencies]

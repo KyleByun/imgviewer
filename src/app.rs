@@ -38,6 +38,11 @@ const DRAG_OUT_DISTANCE: f32 = 6.0;
 /// 안내 메시지를 보여주는 시간(초)
 const INFO_SECONDS: f64 = 6.0;
 
+/// 글꼴 크기 범위와 기본값 (egui 기본 Body 크기와 같다)
+const FONT_MIN: f32 = 9.0;
+const FONT_MAX: f32 = 24.0;
+const FONT_DEFAULT: f32 = 12.5;
+
 const BG_GRID: Color32 = Color32::from_rgb(30, 30, 33);
 const BG_TILE: Color32 = Color32::from_rgb(45, 45, 49);
 const BG_TILE_HOVER: Color32 = Color32::from_rgb(62, 62, 68);
@@ -88,6 +93,7 @@ struct Settings {
     sort_descending: bool,
     thumb_size: f32,
     show_tree: bool,
+    font_size: f32,
 }
 
 impl Default for Settings {
@@ -98,6 +104,7 @@ impl Default for Settings {
             sort_descending: false,
             thumb_size: 150.0,
             show_tree: true,
+            font_size: FONT_DEFAULT,
         }
     }
 }
@@ -237,6 +244,8 @@ pub struct ImgViewApp {
     sort_descending: bool,
 
     thumb_size: f32,
+    /// 목록/글자 크기 (설정 메뉴에서 조절)
+    font_size: f32,
     /// 키보드 이동/Shift 선택의 기준 타일
     focus: Option<usize>,
     /// 선택된 타일들 (폴더들 다음에 이미지들이 이어지는 번호)
@@ -267,11 +276,12 @@ pub struct ImgViewApp {
 
 impl ImgViewApp {
     pub fn new(cc: &eframe::CreationContext<'_>, start_path: Option<PathBuf>) -> Self {
-        setup_style(&cc.egui_ctx);
         let settings: Settings = cc
             .storage
             .and_then(|storage| eframe::get_value(storage, SETTINGS_KEY))
             .unwrap_or_default();
+        let font_size = clamp_font_size(settings.font_size);
+        setup_style(&cc.egui_ctx, font_size);
         let thumb_size = if settings.thumb_size.is_finite() {
             settings.thumb_size.clamp(THUMB_MIN, THUMB_MAX)
         } else {
@@ -293,6 +303,7 @@ impl ImgViewApp {
             sort_key: settings.sort_key,
             sort_descending: settings.sort_descending,
             thumb_size,
+            font_size,
             focus: None,
             selection: BTreeSet::new(),
             pending_scroll: None,
@@ -337,6 +348,7 @@ impl ImgViewApp {
             sort_descending: self.sort_descending,
             thumb_size: self.thumb_size,
             show_tree: self.show_tree,
+            font_size: self.font_size,
         }
     }
 
@@ -356,7 +368,7 @@ impl ImgViewApp {
                 }
             }
         } else {
-            self.message = Some(format!("경로를 찾을 수 없습니다: {}", path.display()));
+            self.message = Some(format!("경로를 찾을 수 없습니다: {}", display_path(&path)));
         }
     }
 
@@ -374,7 +386,7 @@ impl ImgViewApp {
         self.folders = folders;
         self.images = images;
         self.sort_entries();
-        self.path_input = path.display().to_string();
+        self.path_input = display_path(&path);
         self.tree.reveal(&path);
         self.folder = Some(path);
         self.message = None;
@@ -495,7 +507,7 @@ impl ImgViewApp {
     }
 
     /// 빈 공간 오른쪽 클릭 메뉴 (탐색기와 같은 영문 메뉴)
-    fn grid_context_menu(&self, ui: &mut egui::Ui, action: &mut Option<GridAction>) {
+    fn grid_context_menu(&mut self, ui: &mut egui::Ui, action: &mut Option<GridAction>) {
         ui.menu_button("Sort by", |ui| {
             for (key, label) in SortKey::MENU {
                 if ui.radio(self.sort_key == key, label).clicked() {
@@ -513,11 +525,43 @@ impl ImgViewApp {
                 ui.close_menu();
             }
         });
+        ui.menu_button("Settings", |ui| self.font_size_menu(ui));
         ui.separator();
         if ui.button("Refresh").clicked() {
             *action = Some(GridAction::Refresh);
             ui.close_menu();
         }
+    }
+
+    /// Settings 메뉴 안의 글꼴 크기 항목: 현재 값(기본값)을 보여주고 슬라이더로 조절한다.
+    fn font_size_menu(&mut self, ui: &mut egui::Ui) {
+        if ui
+            .button(format!(
+                "Font size: {:.1}  (default {FONT_DEFAULT:.1})",
+                self.font_size
+            ))
+            .clicked()
+        {
+            self.set_font_size(ui.ctx(), FONT_DEFAULT);
+            ui.close_menu();
+        }
+        let response = ui.add(
+            egui::Slider::new(&mut self.font_size, FONT_MIN..=FONT_MAX)
+                .step_by(0.5)
+                .fixed_decimals(1)
+                .show_value(true),
+        );
+        if response.changed() {
+            self.set_font_size(ui.ctx(), self.font_size);
+        }
+        ui.separator();
+        ui.label("Tile names and all UI text");
+    }
+
+    /// 글꼴 크기를 적용하고 설정에 저장될 값도 함께 맞춘다.
+    fn set_font_size(&mut self, ctx: &egui::Context, font_size: f32) {
+        self.font_size = clamp_font_size(font_size);
+        apply_font_size(ctx, self.font_size);
     }
 
     fn pick_folder(&mut self) {
@@ -701,7 +745,7 @@ impl ImgViewApp {
         let dest_name = report
             .dest
             .file_name()
-            .map_or_else(|| report.dest.display().to_string(), |n| n.to_string_lossy().into_owned());
+            .map_or_else(|| display_path(&report.dest), |n| nfc(&n.to_string_lossy()));
         let summary = format!("{}개 항목을 '{dest_name}' 폴더로 복사했습니다", report.copied);
         if report.errors.is_empty() {
             self.info = Some((summary, self.now));
@@ -848,7 +892,7 @@ impl ImgViewApp {
         let text = match &self.folder {
             Some(folder) => format!(
                 "여기에 놓으면 현재 폴더로 복사합니다\n{}",
-                folder.display()
+                display_path(folder)
             ),
             None => "놓으면 해당 폴더나 이미지를 엽니다".to_owned(),
         };
@@ -926,7 +970,7 @@ impl ImgViewApp {
             let name = self.images.get(view.index).map_or("", |e| e.name.as_str());
             format!("{name} - ImgView")
         } else if let Some(folder) = &self.folder {
-            format!("{} - ImgView", folder.display())
+            format!("{} - ImgView", display_path(folder))
         } else {
             "ImgView".to_owned()
         };
@@ -1194,7 +1238,9 @@ impl ImgViewApp {
         let folder_count = self.folders.len();
         let total = self.tile_count();
         let tile_w = self.thumb_size + 2.0 * TILE_PAD;
-        let tile_h = self.thumb_size + TILE_PAD + LABEL_HEIGHT;
+        // 이름 줄 높이도 글꼴 크기를 따라간다 (기본 12.5에서 예전 값 22).
+        let label_h = (self.font_size * 1.76).max(LABEL_HEIGHT);
+        let tile_h = self.thumb_size + TILE_PAD + label_h;
         // 오른쪽 스크롤바 자리를 조금 남긴다.
         let usable_w = (ui.available_width() - 12.0).max(tile_w);
         let cols = (((usable_w + TILE_SPACING) / (tile_w + TILE_SPACING)).floor() as usize).max(1);
@@ -1356,9 +1402,17 @@ impl ImgViewApp {
         };
 
         let folder_count = self.folders.len();
+        let font_size = self.font_size;
         if tile < folder_count {
             paint_folder_icon(&painter, image_area);
-            paint_label(ui, &painter, label_rect, &self.folders[tile].name, label_color);
+            paint_label(
+                ui,
+                &painter,
+                label_rect,
+                &self.folders[tile].name,
+                label_color,
+                font_size,
+            );
             return;
         }
 
@@ -1389,7 +1443,7 @@ impl ImgViewApp {
                 painter.rect_filled(r, 3.0, BG_PLACEHOLDER);
             }
         }
-        paint_label(ui, &painter, label_rect, &entry.name, label_color);
+        paint_label(ui, &painter, label_rect, &entry.name, label_color, font_size);
     }
 
     // ───────────────────────── 뷰어(크게 보기) ─────────────────────────
@@ -1829,18 +1883,20 @@ impl eframe::App for ImgViewApp {
 /// 폴더를 읽어 하위 폴더와 이미지 파일 목록을 이름순으로 돌려준다.
 fn read_folder(path: &Path) -> Result<(Vec<FolderEntry>, Vec<ImageEntry>), String> {
     let read_dir = std::fs::read_dir(path)
-        .map_err(|e| format!("폴더를 열 수 없습니다: {} ({e})", path.display()))?;
+        .map_err(|e| format!("폴더를 열 수 없습니다: {} ({e})", display_path(path)))?;
     let mut folders = Vec::new();
     let mut images = Vec::new();
     for entry in read_dir.flatten() {
         let entry_path = entry.path();
-        let name = entry.file_name().to_string_lossy().into_owned();
+        let raw_name = entry.file_name().to_string_lossy().into_owned();
         let Ok(meta) = std::fs::metadata(&entry_path) else {
             continue;
         };
-        if is_hidden(&meta, &name) {
+        if is_hidden(&meta, &raw_name) {
             continue;
         }
+        // macOS/Windows에서 만든 이름(NFD)은 화면에서 자모가 분리되므로 NFC로 합쳐서 보여준다.
+        let name = nfc(&raw_name);
         if meta.is_dir() {
             folders.push(FolderEntry {
                 path: entry_path,
@@ -1871,7 +1927,7 @@ fn confirm_permanent_delete(frame: &eframe::Frame, paths: &[PathBuf]) -> bool {
     let files = paths.len() - folders;
     let name = |p: &PathBuf| {
         p.file_name()
-            .map_or_else(|| p.display().to_string(), |n| n.to_string_lossy().into_owned())
+            .map_or_else(|| display_path(p), |n| nfc(&n.to_string_lossy()))
     };
     let what = match (files, folders) {
         (1, 0) => format!("'{}' 파일을", name(&paths[0])),
@@ -1936,31 +1992,47 @@ fn file_type(path: &Path) -> String {
         .unwrap_or_default()
 }
 
-fn setup_style(ctx: &egui::Context) {
+fn setup_style(ctx: &egui::Context, font_size: f32) {
     setup_fonts(ctx);
     ctx.set_theme(egui::Theme::Dark);
     let mut visuals = egui::Visuals::dark();
     visuals.panel_fill = Color32::from_rgb(38, 38, 42);
     ctx.set_visuals(visuals);
+    apply_font_size(ctx, font_size);
+}
+
+fn clamp_font_size(font_size: f32) -> f32 {
+    if font_size.is_finite() {
+        font_size.clamp(FONT_MIN, FONT_MAX)
+    } else {
+        FONT_DEFAULT
+    }
+}
+
+/// 본문 글꼴 크기를 기준으로 나머지 글자 크기를 같은 비율로 맞춘다.
+fn apply_font_size(ctx: &egui::Context, font_size: f32) {
+    let size = clamp_font_size(font_size);
+    let proportional = |s: f32| FontId::new(s, egui::FontFamily::Proportional);
+    ctx.style_mut(|style| {
+        style.text_styles = [
+            (egui::TextStyle::Small, proportional(size * 0.72)),
+            (egui::TextStyle::Body, proportional(size)),
+            (egui::TextStyle::Button, proportional(size)),
+            (egui::TextStyle::Heading, proportional(size * 1.44)),
+            (
+                egui::TextStyle::Monospace,
+                FontId::new(size * 0.96, egui::FontFamily::Monospace),
+            ),
+        ]
+        .into();
+    });
 }
 
 /// egui 기본 글꼴에는 한글이 없으므로 시스템 한글 글꼴을 보조 글꼴로 추가한다.
+/// 글꼴을 못 찾으면 한글이 네모(토푸)로 보이므로, 마지막에는 fontconfig에게 물어본다.
 fn setup_fonts(ctx: &egui::Context) {
-    let mut candidates: Vec<PathBuf> = Vec::new();
-    if let Some(windir) = std::env::var_os("WINDIR") {
-        let fonts = PathBuf::from(windir).join("Fonts");
-        candidates.push(fonts.join("malgun.ttf"));
-        candidates.push(fonts.join("NanumGothic.ttf"));
-        candidates.push(fonts.join("gulim.ttc"));
-    }
-    candidates.push(PathBuf::from(r"C:\Windows\Fonts\malgun.ttf"));
-    candidates.push(PathBuf::from("/System/Library/Fonts/AppleSDGothicNeo.ttc"));
-    candidates.push(PathBuf::from("/usr/share/fonts/truetype/nanum/NanumGothic.ttf"));
-    candidates.push(PathBuf::from(
-        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-    ));
-
-    let Some(bytes) = candidates.iter().find_map(|p| std::fs::read(p).ok()) else {
+    let Some(bytes) = find_korean_font() else {
+        eprintln!("한글 글꼴을 찾지 못했습니다. 한글이 네모로 보일 수 있습니다.");
         return;
     };
     let mut fonts = egui::FontDefinitions::default();
@@ -1975,6 +2047,54 @@ fn setup_fonts(ctx: &egui::Context) {
             .push("korean".to_owned());
     }
     ctx.set_fonts(fonts);
+}
+
+/// 한글을 그릴 수 있는 글꼴 파일을 찾는다 (플랫폼별 알려진 경로 → fontconfig 순).
+fn find_korean_font() -> Option<Vec<u8>> {
+    let mut candidates: Vec<PathBuf> = Vec::new();
+    if let Some(windir) = std::env::var_os("WINDIR") {
+        let fonts = PathBuf::from(windir).join("Fonts");
+        candidates.push(fonts.join("malgun.ttf"));
+        candidates.push(fonts.join("NanumGothic.ttf"));
+        candidates.push(fonts.join("gulim.ttc"));
+    }
+    candidates.push(PathBuf::from(r"C:\Windows\Fonts\malgun.ttf"));
+    candidates.push(PathBuf::from("/System/Library/Fonts/AppleSDGothicNeo.ttc"));
+    candidates.push(PathBuf::from("/usr/share/fonts/truetype/nanum/NanumGothic.ttf"));
+    candidates.push(PathBuf::from(
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    ));
+    candidates.push(PathBuf::from(
+        "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+    ));
+
+    candidates
+        .iter()
+        .find_map(|p| std::fs::read(p).ok())
+        .or_else(|| {
+            // 배포판마다 경로가 달라서 fontconfig에 마지막으로 물어본다.
+            let out = std::process::Command::new("fc-match")
+                .args(["-f", "%{file}", ":lang=ko"])
+                .output()
+                .ok()?;
+            let path = String::from_utf8(out.stdout).ok()?;
+            std::fs::read(path.trim()).ok()
+        })
+}
+
+/// 화면에 그릴 문자열을 NFC로 합친다.
+/// macOS/Windows에서 만든 이름은 자모가 분리된 NFD라서 그대로 그리면 "ㅅㅏㅈㅣᆫ"처럼 깨져 보인다.
+pub(crate) fn nfc(text: &str) -> String {
+    use unicode_normalization::UnicodeNormalization as _;
+    if text.is_ascii() {
+        return text.to_owned();
+    }
+    text.nfc().collect()
+}
+
+/// 경로를 화면에 보여줄 문자열로 만든다 (NFC).
+fn display_path(path: &Path) -> String {
+    nfc(&path.display().to_string())
 }
 
 fn is_supported_image(path: &Path) -> bool {
@@ -2029,10 +2149,17 @@ fn paint_folder_icon(painter: &egui::Painter, area: Rect) {
 }
 
 /// 한 줄로, 넘치면 "…"로 자른 파일 이름을 가운데 정렬해서 그린다.
-fn paint_label(ui: &egui::Ui, painter: &egui::Painter, rect: Rect, text: &str, color: Color32) {
+fn paint_label(
+    ui: &egui::Ui,
+    painter: &egui::Painter,
+    rect: Rect,
+    text: &str,
+    color: Color32,
+    font_size: f32,
+) {
     let mut job = egui::text::LayoutJob::simple_singleline(
         text.to_owned(),
-        FontId::proportional(12.5),
+        FontId::proportional(font_size),
         color,
     );
     job.wrap = egui::text::TextWrapping {
@@ -2101,6 +2228,7 @@ mod tests {
             sort_descending: true,
             thumb_size: 200.0,
             show_tree: false,
+            font_size: 16.0,
         };
         eframe::set_value(&mut storage, SETTINGS_KEY, &settings);
         let loaded: Settings = eframe::get_value(&storage, SETTINGS_KEY).unwrap();
@@ -2176,5 +2304,26 @@ mod tests {
         assert_eq!(offset, Vec2::ZERO);
         let offset = clamp_offset(vec2(300.0, 0.0), vec2(1000.0, 100.0), vec2(800.0, 600.0));
         assert_eq!(offset, vec2(100.0, 0.0));
+    }
+
+    #[test]
+    fn decomposed_korean_names_are_shown_composed() {
+        use unicode_normalization::UnicodeNormalization as _;
+        let composed = "사진모음";
+        let decomposed: String = composed.nfd().collect();
+        // macOS/Windows에서 만든 이름은 자모가 분리되어 있다.
+        assert_ne!(decomposed, composed);
+        assert_eq!(nfc(&decomposed), composed);
+        assert_eq!(display_path(Path::new(&decomposed)), composed);
+        // ASCII는 그대로 둔다 (경로 비교가 흔들리지 않게).
+        assert_eq!(nfc("photo.png"), "photo.png");
+    }
+
+    #[test]
+    fn font_size_is_clamped_to_the_slider_range() {
+        assert_eq!(clamp_font_size(FONT_DEFAULT), FONT_DEFAULT);
+        assert_eq!(clamp_font_size(1.0), FONT_MIN);
+        assert_eq!(clamp_font_size(500.0), FONT_MAX);
+        assert_eq!(clamp_font_size(f32::NAN), FONT_DEFAULT);
     }
 }
