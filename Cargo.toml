@@ -26,9 +26,17 @@ serde = { version = "1.0.229", features = ["derive"] }
 # macOS/Windows에서 만든 파일 이름(NFD)을 화면에 보여줄 때 자모가 분리되지 않도록 NFC로 합친다
 unicode-normalization = "0.1"
 
-# 앱에서 탐색기로 끌어서 복사 (Linux는 GTK 창이 필요해서 지원하지 않음)
+# 앱에서 탐색기로 끌어서 복사 (Windows/macOS. Linux는 GTK 창이 필요해서 이 crate 대신 src/xdnd.rs를 쓴다)
 [target.'cfg(any(windows, target_os = "macos"))'.dependencies]
 drag = "2.1.1"
+
+# Linux: 끌어놓기를 쓰려고 X11(Wayland 세션에서는 XWayland)로 실행한다.
+#   winit은 Wayland에서 끌어놓기를 받지 못하고, 앱 밖으로 끌기(XDND 보내는 쪽)는 x11rb로 직접 구현 (src/xdnd.rs)
+#   끄는 동안 커서 모양은 커서 테마(Xcursor)에서 불러와 앱 창에 씌운다 (창 번호는 raw-window-handle로 얻음)
+[target.'cfg(target_os = "linux")'.dependencies]
+winit = { version = "0.30", default-features = false, features = ["x11"] }
+x11rb = { version = "0.13", features = ["cursor", "resource_manager"] }
+raw-window-handle = "0.6"
 
 # 시작할 때 화면 밖에 있던 창을 가운데로 옮기기 (모니터 목록/창 위치 조회)
 [target.'cfg(windows)'.dependencies]

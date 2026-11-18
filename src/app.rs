@@ -182,6 +182,8 @@ struct AfterDelete {
 /// 앱 밖(탐색기)으로 끌어낼 파일들
 struct DragOut {
     paths: Vec<PathBuf>,
+    /// 커서 옆에 보여줄 미리보기 (Linux(X11)에서는 아직 쓰지 않음)
+    #[cfg_attr(target_os = "linux", allow(dead_code))]
     preview: Vec<u8>,
 }
 
@@ -694,7 +696,26 @@ impl ImgViewApp {
         self.release_pointer = true;
     }
 
-    #[cfg(not(any(windows, target_os = "macos")))]
+    /// Linux(X11): 끌기는 백그라운드 스레드에서 버튼을 놓을 때까지 진행되고, 그동안 화면은 계속 그려진다.
+    /// 버튼을 누르고 있는 동안 매 프레임 불리지만 이미 끌고 있으면 `xdnd`가 무시한다.
+    #[cfg(target_os = "linux")]
+    fn run_drag_out(&mut self, frame: &eframe::Frame, drag: DragOut) {
+        use raw_window_handle::{HasWindowHandle, RawWindowHandle};
+        // 끄는 동안 커서를 바꿀 앱 창의 X11 창 번호
+        let app_window = frame
+            .window_handle()
+            .ok()
+            .and_then(|handle| match handle.as_raw() {
+                RawWindowHandle::Xlib(xlib) => u32::try_from(xlib.window).ok(),
+                RawWindowHandle::Xcb(xcb) => Some(xcb.window.get()),
+                _ => None,
+            });
+        if let Err(e) = crate::xdnd::start_drag(drag.paths, app_window) {
+            self.message = Some(format!("끌어서 복사를 시작할 수 없습니다: {e}"));
+        }
+    }
+
+    #[cfg(not(any(windows, target_os = "macos", target_os = "linux")))]
     fn run_drag_out(&mut self, _frame: &eframe::Frame, _drag: DragOut) {
         self.message =
             Some("이 운영체제에서는 앱 밖으로 끌어서 복사하기를 지원하지 않습니다".to_owned());

@@ -6,6 +6,8 @@ mod fileops;
 mod loader;
 mod placement;
 mod tree;
+#[cfg(target_os = "linux")]
+mod xdnd;
 
 use eframe::egui;
 
@@ -30,6 +32,7 @@ fn main() -> eframe::Result<()> {
 
     let options = eframe::NativeOptions {
         viewport,
+        event_loop_builder: event_loop_builder(),
         ..Default::default()
     };
 
@@ -38,4 +41,20 @@ fn main() -> eframe::Result<()> {
         options,
         Box::new(move |cc| Ok(Box::new(app::ImgViewApp::new(cc, start_path)))),
     )
+}
+
+/// Linux: X 서버(Wayland 세션이면 XWayland)를 쓸 수 있으면 X11로 실행한다.
+/// winit은 Wayland에서 파일 끌어놓기를 받지 못하고, 앱 밖으로 끌기(`xdnd`)도 X11에서만 된다.
+#[cfg(target_os = "linux")]
+fn event_loop_builder() -> Option<eframe::EventLoopBuilderHook> {
+    std::env::var_os("DISPLAY")?;
+    Some(Box::new(|builder| {
+        use winit::platform::x11::EventLoopBuilderExtX11 as _;
+        builder.with_x11();
+    }))
+}
+
+#[cfg(not(target_os = "linux"))]
+fn event_loop_builder() -> Option<eframe::EventLoopBuilderHook> {
+    None
 }

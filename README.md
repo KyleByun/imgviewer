@@ -30,7 +30,7 @@ ACDSee 스타일의 가볍고 빠른 이미지 뷰어입니다. Rust와 [egui](h
 | 목록 | 빈 곳 오른쪽 클릭 → **Sort by** (Name / Date modified / Type / Size / Date created, Ascending / Descending), **Refresh** |
 | 목록 | 방향키 이동, Enter 열기, Backspace 상위 폴더, Ctrl+O 폴더 열기, F5 새로 고침 |
 | 목록 | 탐색기 → 창에 끌어다 놓기: 현재 폴더로 **복사** (같은 이름이 있으면 `이름 (2).jpg`로 저장) |
-| 목록 | 썸네일 → 탐색기로 끌기: **복사** (선택한 파일 전부, Windows/macOS) |
+| 목록 | 썸네일 → 탐색기로 끌기: **복사** (선택한 파일 전부) · 터미널에 놓으면 파일 경로가 입력됨 (Claude Code에서는 이미지 첨부) |
 | 크게 보기 | 휠: 확대/축소 (커서 위치 기준) · 왼쪽 버튼 끌기: 보이는 영역 이동 |
 | 크게 보기 | ←/→, PageUp/PageDown: 이전/다음 · 0: 화면 맞춤 · 1: 100% · +/-: 확대/축소 · F11: 전체 화면 |
 | 크게 보기 | Del / Shift+Del: 보고 있는 이미지 삭제 후 다음 이미지로 |
@@ -53,6 +53,7 @@ cargo test                          # 테스트
 - **macOS**: `sh packaging/macos/build_app.sh` → `target/release/ImgView.app`을 응용 프로그램 폴더로 옮기면 Finder/Dock에 아이콘이 보입니다.
 - **Linux**: `sh packaging/linux/install.sh` → 실행 파일, 아이콘, 앱 메뉴 항목을 사용자 폴더에 설치합니다.
   빌드에 필요한 패키지는 [Ubuntu 설치](#ubuntu)를 참고하세요.
+  끌어놓기를 쓰려고 Wayland 세션에서도 XWayland(X11)로 실행합니다. 화면 배율은 GNOME의 글꼴 배율(`Xft.dpi`)을 따르며, 바꾸려면 `WINIT_X11_SCALE_FACTOR=1 imgview`처럼 실행하세요.
 
 ## 아이콘
 
@@ -183,7 +184,7 @@ The user interface is in Korean, except for the right-click **Sort by** menu, wh
 | Grid | Right-click an empty area → **Sort by** (Name / Date modified / Type / Size / Date created, Ascending / Descending), **Refresh** |
 | Grid | Arrow keys move, Enter opens, Backspace goes to the parent folder, Ctrl+O opens a folder, F5 refreshes |
 | Grid | Drop files from the file explorer onto the window: **copies** them into the current folder (an existing name is saved as `name (2).jpg`) |
-| Grid | Drag thumbnails out to the file explorer: **copies** them (all selected files, Windows/macOS) |
+| Grid | Drag thumbnails out to the file explorer: **copies** them (all selected files) · dropping onto a terminal types the file paths (Claude Code attaches the images) |
 | Full-size view | Wheel: zoom in/out at the cursor · drag with the left button: pan |
 | Full-size view | ←/→, PageUp/PageDown: previous/next · 0: fit to window · 1: 100% · +/-: zoom · F11: full screen |
 | Full-size view | Del / Shift+Del: delete the current image and move to the next one |
@@ -206,6 +207,7 @@ The executable is built at `target/release/imgview(.exe)`. You can also drop a f
 - **macOS**: `sh packaging/macos/build_app.sh` → move `target/release/ImgView.app` into Applications to get the icon in Finder/Dock.
 - **Linux**: `sh packaging/linux/install.sh` → installs the executable, icon and app menu entry into your user folders.
   For the packages needed to build, see [Ubuntu](#ubuntu-1) below.
+  To support drag and drop, ImgView runs through XWayland (X11) even in a Wayland session. The UI scale follows GNOME's text scaling (`Xft.dpi`); to override it, run e.g. `WINIT_X11_SCALE_FACTOR=1 imgview`.
 
 ### Icons
 

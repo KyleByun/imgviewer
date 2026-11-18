@@ -2043,7 +2043,9 @@ dependencies = [
  "trash",
  "unicode-normalization",
  "windows-sys 0.59.0",
+ "winit",
  "winresource",
+ "x11rb",
 ]
 
 [[package]]
@@ -4940,6 +4942,7 @@ dependencies = [
  "once_cell",
  "rustix 1.1.6",
  "x11rb-protocol",
+ "xcursor",
 ]
 
 [[package]]
