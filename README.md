@@ -27,8 +27,8 @@ ACDSee 스타일의 가볍고 빠른 이미지 뷰어입니다. Rust와 [egui](h
 | 목록 | 클릭 → 선택 · 썸네일 더블클릭 → 크게 보기 · 폴더 타일 더블클릭 → 폴더 이동 |
 | 목록 | Ctrl+클릭: 여러 개 선택 · Shift+클릭: 범위 선택 · Ctrl+A: 전체 선택 · Esc / 빈 곳 클릭: 선택 해제 |
 | 목록 | **Del**: 선택한 항목을 휴지통으로 이동 · **Shift+Del**: 확인 후 영구 삭제 (휴지통을 거치지 않음) |
-| 목록 | 빈 곳 오른쪽 클릭 → **Sort by** (Name / Date modified / Type / Size / Date created, Ascending / Descending), **Refresh** |
 | 목록 | 빈 곳 오른쪽 클릭 → **Settings...**: 설정 창 (글꼴 크기, [이미지 파일 연결](#파일-연결)) |
+| 목록 | 빈 곳 오른쪽 클릭 → **Sort by** (Name / Date modified / Type / Size / Date created, Ascending / Descending), **Refresh** |
 | 목록 | 방향키 이동, Enter 열기, Backspace 상위 폴더, Ctrl+O 폴더 열기, F5 새로 고침 |
 | 목록 | 탐색기 → 창에 끌어다 놓기: 현재 폴더로 **복사** (같은 이름이 있으면 `이름 (2).jpg`로 저장) |
 | 목록 | 썸네일 → 탐색기로 끌기: **복사** (선택한 파일 전부) · 터미널에 놓으면 파일 경로가 입력됨 (Claude Code에서는 이미지 첨부) |
@@ -171,7 +171,7 @@ Finder/Dock에 아이콘이 보이는 앱으로 만들려면 빌드 후 `sh pack
 ImgView is a lightweight, fast image viewer in the style of ACDSee. It is written in Rust with [egui](https://github.com/emilk/egui) and runs on Windows, macOS and Linux.
 
 Pick a folder in the folder tree on the left to see its images as a thumbnail grid on the right, then double-click a thumbnail to view it full size.
-The user interface is in Korean, except for the right-click menu (**Sort by**, **Settings...**) and the Settings window, which are in English.
+The user interface is in Korean, except for the right-click menu (**Settings...**, **Sort by**, **Refresh**) and the Settings window, which are in English.
 
 ### Features
 
@@ -192,8 +192,8 @@ The user interface is in Korean, except for the right-click menu (**Sort by**, *
 | Grid | Click → select · double-click a thumbnail → full-size view · double-click a folder tile → open the folder |
 | Grid | Ctrl+click: multi-select · Shift+click: range select · Ctrl+A: select all · Esc / click an empty area: clear selection |
 | Grid | **Del**: move the selection to the Recycle Bin · **Shift+Del**: delete permanently after confirmation (skips the Recycle Bin) |
-| Grid | Right-click an empty area → **Sort by** (Name / Date modified / Type / Size / Date created, Ascending / Descending), **Refresh** |
 | Grid | Right-click an empty area → **Settings...**: the Settings window (font size, [file associations](#file-associations)) |
+| Grid | Right-click an empty area → **Sort by** (Name / Date modified / Type / Size / Date created, Ascending / Descending), **Refresh** |
 | Grid | Arrow keys move, Enter opens, Backspace goes to the parent folder, Ctrl+O opens a folder, F5 refreshes |
 | Grid | Drop files from the file explorer onto the window: **copies** them into the current folder (an existing name is saved as `name (2).jpg`) |
 | Grid | Drag thumbnails out to the file explorer: **copies** them (all selected files) · dropping onto a terminal types the file paths (Claude Code attaches the images) |

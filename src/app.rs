@@ -520,6 +520,11 @@ impl ImgViewApp {
 
     /// 빈 공간 오른쪽 클릭 메뉴 (탐색기와 같은 영문 메뉴)
     fn grid_context_menu(&mut self, ui: &mut egui::Ui, action: &mut Option<GridAction>) {
+        if ui.button("Settings...").clicked() {
+            self.settings_open = true;
+            self.assoc_result = None;
+            ui.close_menu();
+        }
         ui.menu_button("Sort by", |ui| {
             for (key, label) in SortKey::MENU {
                 if ui.radio(self.sort_key == key, label).clicked() {
@@ -537,11 +542,6 @@ impl ImgViewApp {
                 ui.close_menu();
             }
         });
-        if ui.button("Settings...").clicked() {
-            self.settings_open = true;
-            self.assoc_result = None;
-            ui.close_menu();
-        }
         ui.separator();
         if ui.button("Refresh").clicked() {
             *action = Some(GridAction::Refresh);
