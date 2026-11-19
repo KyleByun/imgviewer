@@ -2037,6 +2037,7 @@ dependencies = [
  "drag",
  "eframe",
  "image",
+ "objc2 0.5.3",
  "raw-window-handle",
  "rfd",
  "serde",

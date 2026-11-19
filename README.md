@@ -28,6 +28,7 @@ ACDSee 스타일의 가볍고 빠른 이미지 뷰어입니다. Rust와 [egui](h
 | 목록 | Ctrl+클릭: 여러 개 선택 · Shift+클릭: 범위 선택 · Ctrl+A: 전체 선택 · Esc / 빈 곳 클릭: 선택 해제 |
 | 목록 | **Del**: 선택한 항목을 휴지통으로 이동 · **Shift+Del**: 확인 후 영구 삭제 (휴지통을 거치지 않음) |
 | 목록 | 빈 곳 오른쪽 클릭 → **Sort by** (Name / Date modified / Type / Size / Date created, Ascending / Descending), **Refresh** |
+| 목록 | 빈 곳 오른쪽 클릭 → **Settings...**: 설정 창 (글꼴 크기, [이미지 파일 연결](#파일-연결)) |
 | 목록 | 방향키 이동, Enter 열기, Backspace 상위 폴더, Ctrl+O 폴더 열기, F5 새로 고침 |
 | 목록 | 탐색기 → 창에 끌어다 놓기: 현재 폴더로 **복사** (같은 이름이 있으면 `이름 (2).jpg`로 저장) |
 | 목록 | 썸네일 → 탐색기로 끌기: **복사** (선택한 파일 전부) · 터미널에 놓으면 파일 경로가 입력됨 (Claude Code에서는 이미지 첨부) |
@@ -55,6 +56,16 @@ cargo test                          # 테스트
   빌드에 필요한 패키지는 [Ubuntu 설치](#ubuntu)를 참고하세요.
   끌어놓기를 쓰려고 Wayland 세션에서도 XWayland(X11)로 실행합니다. 화면 배율은 GNOME의 글꼴 배율(`Xft.dpi`)을 따르며, 바꾸려면 `WINIT_X11_SCALE_FACTOR=1 imgview`처럼 실행하세요.
 
+## 파일 연결
+
+설정 창(빈 곳 오른쪽 클릭 → **Settings...**)의 **Associate image files with ImgView** 버튼을 누르면 지원하는 이미지 확장자를 ImgView와 연결합니다. 지금 실행 중인 실행 파일이 연결되므로, 실행 파일을 옮겼다면 다시 누르세요.
+
+| OS | 하는 일 |
+|---|---|
+| Windows | 현재 사용자 레지스트리(`HKCU\Software\Classes`)에 ImgView를 등록하고 **설정 > 기본 앱 > ImgView** 화면을 엽니다. Windows는 앱이 스스로 기본 앱이 되는 것을 막아 두었으므로 그 화면에서 ImgView를 기본 앱으로 지정하세요 (맨 위 버튼, 영문 Windows에서는 **Set default**). 다른 앱의 연결은 지우지 않습니다. |
+| Linux | `~/.local/share/applications/ImgView.desktop`을 만들고 `~/.config/mimeapps.list`에 기본 앱으로 적습니다. |
+| macOS | `build_app.sh`로 만든 **ImgView.app**에서 실행해야 합니다. Finder에서 이미지를 열면 ImgView가 열리도록 기본 앱으로 지정합니다. |
+
 ## 아이콘
 
 원본 그림은 `src/icon.png`이고, 둥근 사각형 바깥을 투명하게 만든 OS별 아이콘 파일이 `assets/icons/`에 있습니다.
@@ -77,7 +88,7 @@ Windows에서 바탕 화면 바로 가기가 예전 아이콘으로 보이면 �
 
 ## 설정 저장
 
-마지막 폴더, Sort by 설정, 썸네일 크기, 폴더 트리 표시 여부, 창 크기·위치, 트리 너비와 펼침 상태를 기억합니다.
+마지막 폴더, Sort by 설정, 썸네일 크기, 글꼴 크기, 폴더 트리 표시 여부, 창 크기·위치, 트리 너비와 펼침 상태를 기억합니다.
 프로그램을 끌 때(그리고 실행 중 30초마다) 아래 파일에 저장됩니다. 파일을 지우면 처음 상태로 돌아갑니다.
 
 - Windows: `%APPDATA%\ImgView\data\app.ron`
@@ -160,7 +171,7 @@ Finder/Dock에 아이콘이 보이는 앱으로 만들려면 빌드 후 `sh pack
 ImgView is a lightweight, fast image viewer in the style of ACDSee. It is written in Rust with [egui](https://github.com/emilk/egui) and runs on Windows, macOS and Linux.
 
 Pick a folder in the folder tree on the left to see its images as a thumbnail grid on the right, then double-click a thumbnail to view it full size.
-The user interface is in Korean, except for the right-click **Sort by** menu, which is in English.
+The user interface is in Korean, except for the right-click menu (**Sort by**, **Settings...**) and the Settings window, which are in English.
 
 ### Features
 
@@ -182,6 +193,7 @@ The user interface is in Korean, except for the right-click **Sort by** menu, wh
 | Grid | Ctrl+click: multi-select · Shift+click: range select · Ctrl+A: select all · Esc / click an empty area: clear selection |
 | Grid | **Del**: move the selection to the Recycle Bin · **Shift+Del**: delete permanently after confirmation (skips the Recycle Bin) |
 | Grid | Right-click an empty area → **Sort by** (Name / Date modified / Type / Size / Date created, Ascending / Descending), **Refresh** |
+| Grid | Right-click an empty area → **Settings...**: the Settings window (font size, [file associations](#file-associations)) |
 | Grid | Arrow keys move, Enter opens, Backspace goes to the parent folder, Ctrl+O opens a folder, F5 refreshes |
 | Grid | Drop files from the file explorer onto the window: **copies** them into the current folder (an existing name is saved as `name (2).jpg`) |
 | Grid | Drag thumbnails out to the file explorer: **copies** them (all selected files) · dropping onto a terminal types the file paths (Claude Code attaches the images) |
@@ -209,6 +221,16 @@ The executable is built at `target/release/imgview(.exe)`. You can also drop a f
   For the packages needed to build, see [Ubuntu](#ubuntu-1) below.
   To support drag and drop, ImgView runs through XWayland (X11) even in a Wayland session. The UI scale follows GNOME's text scaling (`Xft.dpi`); to override it, run e.g. `WINIT_X11_SCALE_FACTOR=1 imgview`.
 
+### File associations
+
+In the Settings window (right-click an empty area → **Settings...**), **Associate image files with ImgView** associates the supported image extensions with ImgView. The executable that is currently running is the one that gets associated, so click it again if you move the executable.
+
+| OS | What it does |
+|---|---|
+| Windows | Registers ImgView in the current user's registry (`HKCU\Software\Classes`) and opens **Settings > Default apps > ImgView**. Windows does not let apps make themselves the default, so click **Set default** there. Other apps' associations are left alone. |
+| Linux | Creates `~/.local/share/applications/ImgView.desktop` and sets it as the default app in `~/.config/mimeapps.list`. |
+| macOS | Must be run from the **ImgView.app** made by `build_app.sh`. Makes ImgView the default app, so opening an image in Finder opens ImgView. |
+
 ### Icons
 
 The original artwork is `src/icon.png`. Per-OS icon files, with the area outside the rounded rectangle made transparent, are in `assets/icons/`.
@@ -231,7 +253,7 @@ If a desktop shortcut on Windows still shows the old icon, refresh the icon cach
 
 ### Settings
 
-ImgView remembers the last folder, the Sort by setting, thumbnail size, whether the folder tree is shown, window size and position, and the tree width and expanded folders.
+ImgView remembers the last folder, the Sort by setting, thumbnail size, font size, whether the folder tree is shown, window size and position, and the tree width and expanded folders.
 They are saved when the program closes (and every 30 seconds while it runs) to the file below. Delete the file to start over with the defaults.
 
 - Windows: `%APPDATA%\ImgView\data\app.ron`

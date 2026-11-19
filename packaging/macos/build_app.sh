@@ -44,6 +44,47 @@ cat > "$APP/Contents/Info.plist" <<EOF
     <true/>
     <key>LSMinimumSystemVersion</key>
     <string>10.13</string>
+    <!-- 열 수 있는 문서 형식: Finder의 "다음으로 열기" 목록과 설정 창의 파일 연결에 필요 -->
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Image</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>public.png</string>
+                <string>public.jpeg</string>
+                <string>com.compuserve.gif</string>
+                <string>com.microsoft.bmp</string>
+                <string>com.microsoft.ico</string>
+                <string>public.tiff</string>
+                <string>org.webmproject.webp</string>
+                <string>com.truevision.tga-image</string>
+            </array>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Other image</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>pbm</string>
+                <string>pgm</string>
+                <string>ppm</string>
+                <string>pnm</string>
+                <string>pam</string>
+                <string>qoi</string>
+                <string>hdr</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>
 EOF

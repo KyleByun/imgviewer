@@ -16,8 +16,8 @@ use crate::loader::{self, FullImage, LoadResult, Loader};
 use crate::placement::{self, SavedWindow};
 use crate::tree::FolderTree;
 
-/// 목록에 보여줄 이미지 확장자 (대소문자 무시)
-const IMAGE_EXTENSIONS: &[&str] = &[
+/// 목록에 보여줄 이미지 확장자 (대소문자 무시). 파일 연결(`assoc`)도 이 목록을 쓴다.
+pub(crate) const IMAGE_EXTENSIONS: &[&str] = &[
     "png", "jpg", "jpeg", "jpe", "jfif", "gif", "bmp", "dib", "ico", "tif", "tiff", "webp", "tga",
     "pbm", "pgm", "ppm", "pnm", "pam", "qoi", "hdr",
 ];
@@ -42,6 +42,8 @@ const INFO_SECONDS: f64 = 6.0;
 const FONT_MIN: f32 = 9.0;
 const FONT_MAX: f32 = 24.0;
 const FONT_DEFAULT: f32 = 12.5;
+/// 설정 창 내용 너비. 고정해 두어야 글꼴 크기를 바꾸는 동안 슬라이더가 옆으로 움직이지 않는다.
+const SETTINGS_WIDTH: f32 = 420.0;
 
 const BG_GRID: Color32 = Color32::from_rgb(30, 30, 33);
 const BG_TILE: Color32 = Color32::from_rgb(45, 45, 49);
@@ -246,8 +248,12 @@ pub struct ImgViewApp {
     sort_descending: bool,
 
     thumb_size: f32,
-    /// 목록/글자 크기 (설정 메뉴에서 조절)
+    /// 목록/글자 크기 (설정 창에서 조절)
     font_size: f32,
+    /// 설정 창이 열려 있는지. 열려 있는 동안 목록/뷰어 단축키(Del 등)는 동작하지 않는다.
+    settings_open: bool,
+    /// 설정 창의 파일 연결 결과 (성공 안내 / 오류)
+    assoc_result: Option<Result<String, String>>,
     /// 키보드 이동/Shift 선택의 기준 타일
     focus: Option<usize>,
     /// 선택된 타일들 (폴더들 다음에 이미지들이 이어지는 번호)
@@ -284,6 +290,7 @@ impl ImgViewApp {
             .unwrap_or_default();
         let font_size = clamp_font_size(settings.font_size);
         setup_style(&cc.egui_ctx, font_size);
+        crate::assoc::set_repaint_context(&cc.egui_ctx);
         let thumb_size = if settings.thumb_size.is_finite() {
             settings.thumb_size.clamp(THUMB_MIN, THUMB_MAX)
         } else {
@@ -306,6 +313,8 @@ impl ImgViewApp {
             sort_descending: settings.sort_descending,
             thumb_size,
             font_size,
+            settings_open: false,
+            assoc_result: None,
             focus: None,
             selection: BTreeSet::new(),
             pending_scroll: None,
@@ -329,8 +338,9 @@ impl ImgViewApp {
         };
 
         // 실행할 때 경로를 주면 그것을, 아니면 마지막으로 보던 폴더를 연다.
+        // (macOS Finder에서 연 파일은 실행 인수 대신 문서 열기 이벤트로 이미 와 있다.)
         // 마지막 폴더가 지워졌으면 남아 있는 가장 가까운 상위 폴더를 연다.
-        let start = start_path.or_else(|| {
+        let start = start_path.or_else(crate::assoc::take_opened_file).or_else(|| {
             settings
                 .last_folder
                 .as_deref()
@@ -527,7 +537,11 @@ impl ImgViewApp {
                 ui.close_menu();
             }
         });
-        ui.menu_button("Settings", |ui| self.font_size_menu(ui));
+        if ui.button("Settings...").clicked() {
+            self.settings_open = true;
+            self.assoc_result = None;
+            ui.close_menu();
+        }
         ui.separator();
         if ui.button("Refresh").clicked() {
             *action = Some(GridAction::Refresh);
@@ -535,29 +549,67 @@ impl ImgViewApp {
         }
     }
 
-    /// Settings 메뉴 안의 글꼴 크기 항목: 현재 값(기본값)을 보여주고 슬라이더로 조절한다.
-    fn font_size_menu(&mut self, ui: &mut egui::Ui) {
-        if ui
-            .button(format!(
-                "Font size: {:.1}  (default {FONT_DEFAULT:.1})",
-                self.font_size
-            ))
-            .clicked()
-        {
-            self.set_font_size(ui.ctx(), FONT_DEFAULT);
-            ui.close_menu();
+    /// 설정 창 (팝업): 글꼴 크기, 이미지 파일 확장자 연결.
+    /// 뒤쪽 화면은 클릭할 수 없고, Esc나 바깥 클릭, Close 버튼으로 닫는다.
+    fn ui_settings(&mut self, ctx: &egui::Context) {
+        let mut close = false;
+        let modal = egui::Modal::new(egui::Id::new("settings_dialog")).show(ctx, |ui| {
+            ui.set_width(SETTINGS_WIDTH);
+            ui.heading("Settings");
+            ui.add_space(10.0);
+
+            ui.strong("Font size");
+            ui.horizontal(|ui| {
+                let response = ui.add(
+                    egui::Slider::new(&mut self.font_size, FONT_MIN..=FONT_MAX)
+                        .step_by(0.5)
+                        .fixed_decimals(1),
+                );
+                if response.changed() {
+                    self.set_font_size(ctx, self.font_size);
+                }
+                let is_default = (self.font_size - FONT_DEFAULT).abs() < f32::EPSILON;
+                if ui
+                    .add_enabled(!is_default, egui::Button::new(format!("Default ({FONT_DEFAULT:.1})")))
+                    .clicked()
+                {
+                    self.set_font_size(ctx, FONT_DEFAULT);
+                }
+            });
+            ui.weak("Tile names and all UI text");
+
+            ui.add_space(8.0);
+            ui.separator();
+            ui.add_space(4.0);
+
+            ui.strong("File associations");
+            ui.label(crate::assoc::description());
+            ui.weak(IMAGE_EXTENSIONS.join(", "));
+            ui.add_space(4.0);
+            if ui.button("Associate image files with ImgView").clicked() {
+                self.assoc_result = Some(crate::assoc::associate());
+            }
+            match &self.assoc_result {
+                Some(Ok(text)) => {
+                    ui.colored_label(INFO_COLOR, text.as_str());
+                }
+                Some(Err(text)) => {
+                    ui.colored_label(ERROR_COLOR, text.as_str());
+                }
+                None => {}
+            }
+
+            ui.add_space(8.0);
+            ui.separator();
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                if ui.button("Close").clicked() {
+                    close = true;
+                }
+            });
+        });
+        if close || modal.should_close() {
+            self.settings_open = false;
         }
-        let response = ui.add(
-            egui::Slider::new(&mut self.font_size, FONT_MIN..=FONT_MAX)
-                .step_by(0.5)
-                .fixed_decimals(1)
-                .show_value(true),
-        );
-        if response.changed() {
-            self.set_font_size(ui.ctx(), self.font_size);
-        }
-        ui.separator();
-        ui.label("Tile names and all UI text");
     }
 
     /// 글꼴 크기를 적용하고 설정에 저장될 값도 함께 맞춘다.
@@ -1149,8 +1201,9 @@ impl ImgViewApp {
     }
 
     fn browser_keys(&mut self, ctx: &egui::Context) {
-        if ctx.wants_keyboard_input() {
-            return; // 경로 입력 중
+        // 경로 입력 중이거나 설정 창이 열려 있으면 (Del로 파일이 지워지지 않게) 단축키를 쓰지 않는다.
+        if ctx.wants_keyboard_input() || self.settings_open {
+            return;
         }
         let (open_dialog, select_all, refresh, escape, delete) = ctx.input(|i| {
             (
@@ -1552,7 +1605,7 @@ impl ImgViewApp {
         let mut toggle_fullscreen = false;
         let mut delete: Option<bool> = None;
 
-        if !ctx.wants_keyboard_input() {
+        if !ctx.wants_keyboard_input() && !self.settings_open {
             ctx.input(|i| {
                 if i.key_pressed(Key::Delete) {
                     delete = Some(i.modifiers.shift);
@@ -1858,6 +1911,10 @@ impl eframe::App for ImgViewApp {
         self.poll_copy_jobs();
         self.poll_delete_jobs();
         self.handle_dropped_files(ctx);
+        // macOS: 앱이 떠 있는 동안 Finder에서 연 파일
+        if let Some(path) = crate::assoc::take_opened_file() {
+            self.open_path(&path);
+        }
         if ctx.input(|i| i.key_pressed(Key::F11)) {
             self.set_fullscreen(ctx, !self.fullscreen);
         }
@@ -1874,6 +1931,9 @@ impl eframe::App for ImgViewApp {
             self.ui_viewer(ctx);
         } else {
             self.ui_browser(ctx);
+        }
+        if self.settings_open {
+            self.ui_settings(ctx);
         }
         self.paint_drop_overlay(ctx);
         self.update_title(ctx);

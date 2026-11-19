@@ -38,13 +38,20 @@ winit = { version = "0.30", default-features = false, features = ["x11"] }
 x11rb = { version = "0.13", features = ["cursor", "resource_manager"] }
 raw-window-handle = "0.6"
 
+# macOS: Finder에서 연 파일(문서 열기 이벤트)을 받는다 (src/assoc.rs). winit이 쓰는 것과 같은 버전
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.5"
+
 # 시작할 때 화면 밖에 있던 창을 가운데로 옮기기 (모니터 목록/창 위치 조회)
+# 파일 확장자 연결: 레지스트리(Registry)에 등록하고 기본 앱 설정 화면 열기(Shell)
 [target.'cfg(windows)'.dependencies]
 raw-window-handle = "0.6"
 windows-sys = { version = "0.59", features = [
     "Win32_Foundation",
     "Win32_Graphics_Gdi",
     "Win32_Graphics_Dwm",
+    "Win32_System_Registry",
+    "Win32_UI_Shell",
     "Win32_UI_WindowsAndMessaging",
 ] }
 

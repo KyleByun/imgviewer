@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod app;
+mod assoc;
 mod fileops;
 mod loader;
 mod placement;
@@ -35,6 +36,9 @@ fn main() -> eframe::Result<()> {
         event_loop_builder: event_loop_builder(),
         ..Default::default()
     };
+
+    // macOS: Finder에서 연 파일은 실행 인수가 아니라 "문서 열기" 이벤트로 온다. 앱이 뜨기 전에 받을 준비를 한다.
+    assoc::install_open_handler();
 
     eframe::run_native(
         "ImgView",
