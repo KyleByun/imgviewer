@@ -63,7 +63,7 @@ cargo test                          # 테스트
 | OS | 하는 일 |
 |---|---|
 | Windows | 현재 사용자 레지스트리(`HKCU\Software\Classes`)에 ImgView를 등록하고 **설정 > 기본 앱 > ImgView** 화면을 엽니다. Windows는 앱이 스스로 기본 앱이 되는 것을 막아 두었으므로 그 화면에서 ImgView를 기본 앱으로 지정하세요 (맨 위 버튼, 영문 Windows에서는 **Set default**). 다른 앱의 연결은 지우지 않습니다. |
-| Linux | `~/.local/share/applications/ImgView.desktop`을 만들고 `~/.config/mimeapps.list`에 기본 앱으로 적습니다. |
+| Linux | `~/.local/share/applications/ImgView.desktop`을 만들고 `~/.config/mimeapps.list`에 기본 앱으로 적습니다. 연결하는 형식은 `packaging/linux/ImgView.desktop`의 MIME 형식(PNG, JPEG, GIF, BMP, WebP, TIFF, ICO, TGA, PBM/PGM/PPM/PNM)이고, HDR, QOI, PAM은 빠집니다. |
 | macOS | `build_app.sh`로 만든 **ImgView.app**에서 실행해야 합니다. Finder에서 이미지를 열면 ImgView가 열리도록 기본 앱으로 지정합니다. |
 
 ## 아이콘
@@ -228,7 +228,7 @@ In the Settings window (right-click an empty area → **Settings...**), **Associ
 | OS | What it does |
 |---|---|
 | Windows | Registers ImgView in the current user's registry (`HKCU\Software\Classes`) and opens **Settings > Default apps > ImgView**. Windows does not let apps make themselves the default, so click **Set default** there. Other apps' associations are left alone. |
-| Linux | Creates `~/.local/share/applications/ImgView.desktop` and sets it as the default app in `~/.config/mimeapps.list`. |
+| Linux | Creates `~/.local/share/applications/ImgView.desktop` and sets it as the default app in `~/.config/mimeapps.list`. The associated types are the MIME types in `packaging/linux/ImgView.desktop` (PNG, JPEG, GIF, BMP, WebP, TIFF, ICO, TGA, PBM/PGM/PPM/PNM); HDR, QOI and PAM are not included. |
 | macOS | Must be run from the **ImgView.app** made by `build_app.sh`. Makes ImgView the default app, so opening an image in Finder opens ImgView. |
 
 ### Icons

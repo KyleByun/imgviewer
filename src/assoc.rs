@@ -16,6 +16,15 @@ pub fn description() -> &'static str {
     platform::DESCRIPTION
 }
 
+/// 설정 창에 보여줄, 실제로 연결되는 형식 목록.
+/// Linux는 확장자가 아니라 MIME 형식으로 연결하므로 그 목록을 보여준다 (hdr, qoi, pam은 빠짐).
+pub fn covered_types() -> String {
+    #[cfg(target_os = "linux")]
+    return freedesktop::mime_types().join(", ");
+    #[cfg(not(target_os = "linux"))]
+    crate::app::IMAGE_EXTENSIONS.join(", ")
+}
+
 /// 이미지 확장자들을 ImgView와 연결한다. 성공하면 사용자에게 보여줄 안내 문구를 돌려준다.
 pub fn associate() -> Result<String, String> {
     platform::associate()

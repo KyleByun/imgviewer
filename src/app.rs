@@ -584,7 +584,7 @@ impl ImgViewApp {
 
             ui.strong("File associations");
             ui.label(crate::assoc::description());
-            ui.weak(IMAGE_EXTENSIONS.join(", "));
+            ui.weak(crate::assoc::covered_types());
             ui.add_space(4.0);
             if ui.button("Associate image files with ImgView").clicked() {
                 self.assoc_result = Some(crate::assoc::associate());
